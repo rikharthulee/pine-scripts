@@ -1,0 +1,102 @@
+//@version=6
+indicator("ScalpSuite — Cloud + HUD", overlay=true, max_labels_count=1, max_lines_count=500)
+
+// ===== Inputs =====
+emaFast   = input.int(9,  "Fast EMA", minval=1)
+emaSlow   = input.int(21, "Slow EMA", minval=1)
+rvolLen   = input.int(20, "Relative Volume Lookback", minval=1)
+rvolMin   = input.float(1.0, "Min RVOL (HUD only)", step=0.1)
+atrPctMin = input.float(0.08, "Min ATR% (HUD only)", step=0.01)
+useHeikin = input.bool(false, "Use Heikin Ashi for ALL calcs")
+useSession= input.bool(true, "Use session time filter")
+sess1     = input.session("0700-1100", "Session 1 (HHMM-HHMM)")
+sess2     = input.session("1200-1600", "Session 2 (HHMM-HHMM)")
+showVWAP  = input.bool(true, "Show Session VWAP")
+shadeSess = input.bool(true, "Shade active sessions")
+
+// --- NEW: choose a higher timeframe for the HUD bias
+biasTF    = input.timeframe("15", "Bias timeframe for HUD")  // <<< NEW
+
+// ===== Unified source (chart timeframe) =====
+haClose = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, close)
+src = useHeikin ? haClose : close
+
+// ===== EMA cloud (chart timeframe plot) =====
+emaF = ta.ema(src, emaFast)
+emaS = ta.ema(src, emaSlow)
+aboveCloud = src > emaF and emaF > emaS
+belowCloud = src < emaF and emaF < emaS
+
+// ===== MACD (state only, chart timeframe) =====
+macd   = ta.ema(src, 12) - ta.ema(src, 26)
+signal = ta.ema(macd, 9)
+macdBull = macd > signal
+
+// ===== RVOL & ATR% (for HUD only, chart timeframe) =====
+rvol   = volume / ta.sma(volume, rvolLen)
+atr    = ta.atr(10)
+atrPct = atr / src * 100.0
+volOK  = rvol >= rvolMin
+chopOK = atrPct >= atrPctMin
+
+// ===== Session & VWAP (chart timeframe) =====
+inSess1 = not na(time(timeframe.period, sess1))
+inSess2 = not na(time(timeframe.period, sess2))
+inSession = not useSession or inSess1 or inSess2
+vwap = ta.vwap
+
+// ===== Plots (chart timeframe) =====
+pF = plot(emaF, title="EMA Fast", color=color.new(color.gray, 0))
+pS = plot(emaS, title="EMA Slow", color=color.new(color.gray, 0))
+fill(pF, pS, color=emaF > emaS ? color.new(color.green, 85) : color.new(color.red, 85))
+plot(showVWAP ? vwap : na, title="Session VWAP", linewidth=2, color=color.new(color.blue, 0))
+
+// Optional session shading
+bgcolor(shadeSess and inSession ? color.new(color.teal, 92) : na)
+
+// ===== HUD bias using HIGHER TIMEFRAME EMAs =====
+// Build symbol respecting Heikin setting
+symForHUD = useHeikin ? ticker.heikinashi(syminfo.tickerid) : syminfo.tickerid  // <<< NEW
+// Pull HTF EMAs
+emaF_htf = request.security(symForHUD, biasTF, ta.ema(close, emaFast))           // <<< NEW
+emaS_htf = request.security(symForHUD, biasTF, ta.ema(close, emaSlow))           // <<< NEW
+aboveCloud_htf = emaF_htf > emaS_htf                                             // <<< NEW
+belowCloud_htf = emaF_htf < emaS_htf                                             // <<< NEW
+
+// ===== HUD (table with descriptions) =====
+var table hud = table.new(position.top_right, 4, 6, border_width=1)  // col0 padding, col1 label, col2 value, col3 help
+
+// Use HTF bias for the HUD text/color (from earlier in your script)
+biasTxt = aboveCloud_htf ? "UP" : belowCloud_htf ? "DOWN" : "CHOP"
+biasClr = aboveCloud_htf ? color.lime : belowCloud_htf ? color.red : color.orange
+
+if barstate.islast
+    // Row 0 — Bias
+    table.cell(hud, 1, 0, "Bias (EMA 9/21)", text_color=color.white, bgcolor=color.new(color.silver, 20))
+    table.cell(hud, 2, 0, biasTxt, text_color=biasClr)
+    table.cell(hud, 3, 0, "HTF trend via EMA 9/21", text_color=color.new(color.white, 0))
+
+    // Row 1 — MACD
+    table.cell(hud, 1, 1, "MACD", text_color=color.white, bgcolor=color.new(color.silver, 20))
+    table.cell(hud, 2, 1, macdBull ? "Bullish" : "Bearish", text_color=macdBull ? color.lime : color.red)
+    table.cell(hud, 3, 1, "Momentum (12/26/9) on chart TF", text_color=color.new(color.white, 0))
+
+    // Row 2 — RVOL
+    table.cell(hud, 1, 2, "RVOL", text_color=color.white, bgcolor=color.new(color.silver, 20))
+    table.cell(hud, 2, 2, str.tostring(rvol, format.mintick), text_color=volOK ? color.lime : color.orange)
+    table.cell(hud, 3, 2, "Vol vs 20-bar avg (>1 = high)", text_color=color.new(color.white, 0))
+
+    // Row 3 — ATR%
+    table.cell(hud, 1, 3, "ATR%", text_color=color.white, bgcolor=color.new(color.silver, 20))
+    table.cell(hud, 2, 3, str.tostring(atrPct, format.mintick), text_color=chopOK ? color.lime : color.orange)
+    table.cell(hud, 3, 3, "Volatility as % of price", text_color=color.new(color.white, 0))
+
+    // Row 4 — VWAP side
+    table.cell(hud, 1, 4, "VWAP side", text_color=color.white, bgcolor=color.new(color.silver, 20))
+    table.cell(hud, 2, 4, src >= vwap ? "Above" : "Below", text_color=src >= vwap ? color.lime : color.red)
+    table.cell(hud, 3, 4, "Position vs session mean", text_color=color.new(color.white, 0))
+
+    // Row 5 — Session
+    table.cell(hud, 1, 5, "Session", text_color=color.white, bgcolor=color.new(color.silver, 20))
+    table.cell(hud, 2, 5, inSession ? "Active" : "Closed", text_color=inSession ? color.lime : color.orange)
+    table.cell(hud, 3, 5, "Within trading hours filter", text_color=color.new(color.white, 0))
