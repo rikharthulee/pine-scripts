@@ -74,29 +74,29 @@ if barstate.islast
     // Row 0 — Bias
     table.cell(hud, 1, 0, "Bias (EMA 9/21)", text_color=color.white, bgcolor=color.new(color.silver, 20))
     table.cell(hud, 2, 0, biasTxt, text_color=biasClr)
-    table.cell(hud, 3, 0, "HTF trend via EMA 9/21", text_color=color.new(color.white, 0))
+    table.cell(hud, 3, 0, "HTF trend via EMA 9/21", text_color=color.white, bgcolor=color.new(color.silver, 20))
 
     // Row 1 — MACD
     table.cell(hud, 1, 1, "MACD", text_color=color.white, bgcolor=color.new(color.silver, 20))
     table.cell(hud, 2, 1, macdBull ? "Bullish" : "Bearish", text_color=macdBull ? color.lime : color.red)
-    table.cell(hud, 3, 1, "Momentum (12/26/9) on chart TF", text_color=color.new(color.white, 0))
+    table.cell(hud, 3, 1, "Momentum (12/26/9) on chart TF", text_color=color.white, bgcolor=color.new(color.silver, 20))
 
     // Row 2 — RVOL
     table.cell(hud, 1, 2, "RVOL", text_color=color.white, bgcolor=color.new(color.silver, 20))
     table.cell(hud, 2, 2, str.tostring(rvol, format.mintick), text_color=volOK ? color.lime : color.orange)
-    table.cell(hud, 3, 2, "Vol vs 20-bar avg (>1 = high)", text_color=color.new(color.white, 0))
+    table.cell(hud, 3, 2, "Vol vs 20-bar avg (>1 = high)", text_color=color.white, bgcolor=color.new(color.silver, 20))
 
     // Row 3 — ATR%
     table.cell(hud, 1, 3, "ATR%", text_color=color.white, bgcolor=color.new(color.silver, 20))
     table.cell(hud, 2, 3, str.tostring(atrPct, format.mintick), text_color=chopOK ? color.lime : color.orange)
-    table.cell(hud, 3, 3, "Volatility as % of price", text_color=color.new(color.white, 0))
+    table.cell(hud, 3, 3, "Volatility as % of price", text_color=color.white, bgcolor=color.new(color.silver, 20))
 
     // Row 4 — VWAP side
     table.cell(hud, 1, 4, "VWAP side", text_color=color.white, bgcolor=color.new(color.silver, 20))
     table.cell(hud, 2, 4, src >= vwap ? "Above" : "Below", text_color=src >= vwap ? color.lime : color.red)
-    table.cell(hud, 3, 4, "Position vs session mean", text_color=color.new(color.white, 0))
+    table.cell(hud, 3, 4, "Position vs session mean", text_color=color.white, bgcolor=color.new(color.silver, 20))
 
     // Row 5 — Session
     table.cell(hud, 1, 5, "Session", text_color=color.white, bgcolor=color.new(color.silver, 20))
     table.cell(hud, 2, 5, inSession ? "Active" : "Closed", text_color=inSession ? color.lime : color.orange)
-    table.cell(hud, 3, 5, "Within trading hours filter", text_color=color.new(color.white, 0))
+    table.cell(hud, 3, 5, "Within trading hours filter", text_color=color.white, bgcolor=color.new(color.silver, 20))
